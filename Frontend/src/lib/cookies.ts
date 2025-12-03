@@ -1,17 +1,19 @@
 export const cookieUtils = {
-  getToken: (): string | undefined => {
-    const cookies = document.cookie.split(';');
-    const tokenCookie = cookies.find(cookie => 
-      cookie.trim().startsWith('token=')
-    );
-    return tokenCookie ? tokenCookie.split('=')[1] : undefined;
+  getToken: (): string | null => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; token=`);
+    if (parts.length === 2) {
+      return parts.pop()?.split(';').shift() || null;
+    }
+    return null;
   },
 
   setToken: (token: string): void => {
-    document.cookie = `token=${token}; path=/; secure; samesite=strict`;
+    const maxAge = 24 * 60 * 60; // 24 hours in seconds
+    document.cookie = `token=${token}; path=/; max-age=${maxAge}; samesite=lax`;
   },
 
   removeToken: (): void => {
-    document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; samesite=lax';
   }
 };

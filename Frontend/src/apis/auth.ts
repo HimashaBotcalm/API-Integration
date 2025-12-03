@@ -31,13 +31,7 @@ export interface SignupData {
 }
 
 export const authApi = {
-  login: async (data: LoginData) => {
-    const response = await api.post<{ message: string; user: AuthUser; token?: string }>('/auth/login', data)
-    if (response.data.token) {
-      cookieUtils.setToken(response.data.token)
-    }
-    return response
-  },
+  login: (data: LoginData) => api.post<{ message: string; user: AuthUser }>('/auth/login', data),
   signup: (data: SignupData) => api.post<{ message: string; user: AuthUser }>('/auth/signup', data),
   logout: async () => {
     try {

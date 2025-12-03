@@ -1,8 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authApi } from '../apis/auth';
-//import { createCookieMonitor, hasAuthCookie } from '../utils/cookieUtils';
-import { useAuthMonitor } from '../hooks/useAuthMonitor';
-import { startTokenChecker, stopTokenChecker } from '../libs/axios';
+import { useCookieMonitor } from '../hooks/useCookieMonitor';
+import { cookieUtils } from '../lib/cookies';
 
 interface AuthUser {
   id: string;
@@ -64,23 +63,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => window.removeEventListener('auth:logout', handleAuthLogout);
   }, []);
 
-  // Monitor token deletion for automatic logout
-  useAuthMonitor(() => {
+  // Monitor cookie deletion for automatic logout
+  useCookieMonitor(() => {
     if (user) {
       setUser(null);
     }
   });
-
-  // Start/stop token checker based on auth state
-  useEffect(() => {
-    if (user) {
-      startTokenChecker(); // Start checking every 5 seconds when logged in
-    } else {
-      stopTokenChecker(); // Stop checking when logged out
-    }
-
-    return () => stopTokenChecker(); // Cleanup on unmount
-  }, [user]);
 
   const login = (userData: AuthUser) => {
     setUser(userData);
@@ -92,6 +80,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
+      cookieUtils.removeToken();
       setUser(null);
     }
   };
