@@ -8,25 +8,33 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 export const authController = {
   signup: async (req: Request, res: Response) => {
     try {
+      console.log('Signup request received:', req.body);
       const { name, email, password, age, gender, phone, role } = req.body;
       
       if (!name || !email || !password) {
         return res.status(400).json({ error: "Name, email, and password are required" });
       }
       
+      console.log('Checking for existing user with email:', email);
       const existingAuth = await Auth.findOne({ email: email.toLowerCase() });
       if (existingAuth) {
         return res.status(400).json({ error: "User already exists with this email" });
       }
       
+      console.log('Creating new user...');
       const user = new User({ name, email, age, gender, phone, role: role || 'user' });
-      await user.save();
+      const savedUser = await user.save();
+      console.log('User saved to MongoDB:', savedUser._id);
+      console.log('Collection name:', User.collection.name);
+      console.log('User data saved:', JSON.stringify(savedUser, null, 2));
       
-      const auth = new Auth({ userId: user._id, email, password });
-      await auth.save();
+      console.log('Creating auth record...');
+      const auth = new Auth({ userId: savedUser._id, email, password });
+      const savedAuth = await auth.save();
+      console.log('Auth record saved:', savedAuth._id);
       
       const token = jwt.sign(
-        { userId: user._id, email: user.email, role: user.role }, 
+        { userId: savedUser._id, email: savedUser.email, role: savedUser.role }, 
         JWT_SECRET, 
         { expiresIn: '24h' }
       );
@@ -37,19 +45,21 @@ export const authController = {
         maxAge: 24 * 60 * 60 * 1000
       });
       
+      console.log('User creation completed successfully');
       res.status(201).json({ 
         message: "User created successfully",
         user: {
-          id: user._id,
-          name: user.name, 
-          email: user.email,
-          age: user.age,
-          gender: user.gender,
-          phone: user.phone,
-          role: user.role
+          id: savedUser._id,
+          name: savedUser.name, 
+          email: savedUser.email,
+          age: savedUser.age,
+          gender: savedUser.gender,
+          phone: savedUser.phone,
+          role: savedUser.role
         } 
       });
     } catch (error: any) {
+      console.error('Signup error:', error);
       res.status(500).json({ error: error.message });
     }
   },
@@ -98,6 +108,7 @@ export const authController = {
           gender: user!.gender,
           phone: user!.phone,
           role: user!.role,
+          avatar: user!.avatar,
           lastLogin: auth.lastLogin
         } 
       });

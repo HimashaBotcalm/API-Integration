@@ -65,7 +65,8 @@ const userSchema = new mongoose.Schema<IUser>({
     type: Date
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  collection: 'users'  // Explicitly set collection name
 });
 
 const User: Model<IUser> = mongoose.model<IUser>("User", userSchema);

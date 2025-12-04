@@ -3,9 +3,58 @@
 import * as React from "react"
 import { useAuth } from "../contexts/AuthContext"
 import { Button } from "@/components/ui/button"
+import { Camera } from "lucide-react"
+import api from "../libs/axios"
 
 export function Profile() {
   const { user, logout } = useAuth()
+  const [uploading, setUploading] = React.useState(false)
+  const [avatar, setAvatar] = React.useState(user?.avatar || null)
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file')
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      alert('File size must be less than 5MB')
+      return
+    }
+
+    setUploading(true)
+    try {
+      const reader = new FileReader()
+      reader.onload = async (e) => {
+        try {
+          const base64 = e.target?.result as string
+          
+          const response = await api.post('/users/profile/upload-picture', {
+            image: base64
+          })
+
+          if (response.data.avatar) {
+            setAvatar(response.data.avatar)
+            alert('Profile picture updated successfully!')
+          }
+        } catch (error: any) {
+          console.error('Upload error:', error)
+          const errorMessage = error.response?.data?.error || 'Failed to upload image'
+          alert(errorMessage)
+        }
+      }
+      reader.readAsDataURL(file)
+    } catch (error) {
+      console.error('File read error:', error)
+      alert('Failed to read image file')
+    } finally {
+      setUploading(false)
+    }
+  }
 
   if (!user) {
     return (
@@ -26,12 +75,41 @@ export function Profile() {
 
       <div className="bg-white p-8 rounded-xl shadow-lg border max-w-2xl">
         <div className="flex items-center space-x-6 mb-8">
-          <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
-            {user.name[0].toUpperCase()}
+          <div className="relative">
+            {avatar ? (
+              <img 
+                src={avatar} 
+                alt="Profile" 
+                className="w-20 h-20 rounded-full object-cover border-2 border-gray-200"
+              />
+            ) : (
+              <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                {user.name[0].toUpperCase()}
+              </div>
+            )}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="absolute -bottom-1 -right-1 bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full shadow-lg transition-colors disabled:opacity-50"
+            >
+              {uploading ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Camera className="w-4 h-4" />
+              )}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="hidden"
+            />
           </div>
           <div>
             <h2 className="text-2xl font-semibold text-gray-900">{user.name}</h2>
             <p className="text-gray-600">{user.email}</p>
+            <p className="text-sm text-gray-500 mt-1">Click camera icon to upload photo</p>
           </div>
         </div>
 

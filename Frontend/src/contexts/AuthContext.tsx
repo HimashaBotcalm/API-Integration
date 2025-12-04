@@ -11,6 +11,8 @@ interface AuthUser {
   gender?: string;
   phone?: string;
   role: 'user' | 'admin';
+  avatar?: string;
+  lastLogin?: string;
 }
 
 interface AuthContextType {
